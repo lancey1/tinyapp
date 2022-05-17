@@ -60,10 +60,14 @@ app.get("/u/:shortURL", (req, res) => {            //  http://localhost:8070/u/b
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString()
   urlDatabase[shortURL] = req.body.longURL;
-  //console.log(urlDatabase); // Log the POST request body to the console
+                                                //console.log(urlDatabase); // Log the POST request body to the console
   res.redirect(`/urls/${shortURL}`);
 });
 
+app.post("/urls/:shortURL/delete", (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect(`/urls`);
+});
 
 
  app.listen(PORT, () => {
