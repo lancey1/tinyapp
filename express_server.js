@@ -1,17 +1,27 @@
 const express = require("express");
 const app = express();
 const PORT = 8070; // default port 8080
-app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
+app.use(express.urlencoded({extended: true}));
 app.use(bodyParser.urlencoded({extended: true}));
-
+app.set("view engine", "ejs");
 
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
-  "testing": "http://www.example.edu"
 };
+
+function generateRandomString() {
+  let shortURL = '';
+  let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+  for (let i = 0; shortURL.length < 6; i++) {
+    let tmpStr = possible.charAt(Math.floor(Math.random() * 54 ));
+    shortURL += tmpStr;
+  } 
+  return shortURL;
+}
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
@@ -22,7 +32,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-app.get("/urls.json", (req, res) => {
+app.get("/urls.json", (req, res) => {   
   res.json(urlDatabase);
 });
 
@@ -41,40 +51,22 @@ app.get("/hello", (req, res) => {
   res.render("hello_world", templateVars);
 });
 
-app.get("/set", (req, res) => {
-  const a = 1;
-  res.send(`a = ${a}`);
- });
- 
- app.get("/fetch", (req, res) => {
-  res.send(`a = ${a}`);
- });
- 
- app.get("/u/:shortURL", (req, res) => {
-  // const longURL = ...
+app.get("/u/:shortURL", (req, res) => {            //  http://localhost:8070/u/b2xVn2
+  let shortURL = req.params.shortURL;
+  let longURL = urlDatabase[shortURL];
   res.redirect(longURL);
 });
+
+app.post("/urls", (req, res) => {
+  const shortURL = generateRandomString()
+  urlDatabase[shortURL] = req.body.longURL;
+  //console.log(urlDatabase); // Log the POST request body to the console
+  res.redirect(`/urls/${shortURL}`);
+});
+
 
 
  app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send(generateRandomString());         // Respond with 'Ok' (we will replace this)
-});
-
-
-
-function generateRandomString() {
-  let shortURL = '';
-  let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-
-  for (let i = 0; shortURL.length < 6; i++) {
-    let tmpStr = possible.charAt(Math.floor(Math.random() * 54 ));
-    tmpStr = tmpStr.replace(/[&/\#,+()$~%.;`^'":[]*?<_>=@{}]/, 'q');
-    shortURL += tmpStr;
-  } 
-  return shortURL;
-}
