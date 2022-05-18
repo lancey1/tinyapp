@@ -29,14 +29,14 @@ const users = {
 
 app.get("/urls/new", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookup(cookieid,users)
+  let email = userLookupbyID(cookieid,users)
   const templateVars = {email};
   res.render("urls_new",templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookup(cookieid,users)
+  let email = userLookupbyID(cookieid,users)
   let shortURL = req.params.shortURL;
   const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL],email};
   res.render("urls_show", templateVars);
@@ -48,7 +48,7 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/urls", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookup(cookieid,users)
+  let email = userLookupbyID(cookieid,users)
   const templateVars = { urls: urlDatabase, email};
   res.render("urls_index", templateVars);
 });
@@ -97,18 +97,25 @@ app.get("/hello", (req, res) => {
 
 app.get("/register", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookup(cookieid,users)
+  let email = userLookupbyID(cookieid,users)
   const templateVars = { urls: urlDatabase,email};
   res.render("urls_register", templateVars);
 });
 
 app.post("/register", (req, res) => {
-  randomUserID = generateRandomString()
-  users[randomUserID] = {"id": randomUserID, "email": req.body.email, "password":req.body.password};
-  res.cookie("user_id", users[randomUserID].id);
-  // console.log(req.cookies["user_id"])
-  // setTimeout(()=>console.log(users), 1000)
-  res.redirect('/urls');
+  let randomUserID = generateRandomString()
+  let emailInput =  req.body.email
+  let passwordInput = req.body.password
+  if (emailInput === "" || passwordInput === "" || userLookupbyEmail(emailInput,users)) {
+    res.sendStatus(404).send(400);
+  } 
+  else {
+    users[randomUserID] = {"id": randomUserID, "email": emailInput, "password":passwordInput};
+    res.cookie("user_id", users[randomUserID].id);
+    //console.log(req.cookies["user_id"])
+    //setTimeout(()=>console.log(users), 500)
+    res.redirect('/urls');
+  }
 });
 
 
@@ -120,15 +127,15 @@ app.listen(PORT, () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-const userLookup = function(userid,data) {
+const userLookupbyID = function(userid,data) {
   let email = ""
-  for (let ids in users) {
+  for (let ids in data) {
     if (userid === data[ids].id) {
       return email = data[ids].email
     } 
   } return email
 } 
-// console.log(userLookup("userRandomID",users));
+// console.log(userLookupbyID("userRandomID",users));
 
 
 const generateRandomString = function() {
@@ -140,3 +147,12 @@ const generateRandomString = function() {
   }
   return shortURL;
 };
+
+
+const userLookupbyEmail = function (email,data){
+  for (let elm in data) {
+    if (email === data[elm].email) {
+      return true
+    } 
+  } return false
+} 
