@@ -13,6 +13,7 @@ const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
+
 const users = { 
   "userRandomID": {
     id: "userRandomID", 
@@ -26,24 +27,16 @@ const users = {
   }
 }
 
-const generateRandomString = function() {
-  let shortURL = '';
-  let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; shortURL.length < 6; i++) {
-    let tmpStr = possible.charAt(Math.floor(Math.random() * 54));
-    shortURL += tmpStr;
-  }
-  return shortURL;
-};
-
 app.get("/urls/new", (req, res) => {
-  let userID = req.cookies["user_id"];
+  let cookieid = req.cookies["user_id"]
+  let email = userLookup(cookieid,users)
   const templateVars = {email};
   res.render("urls_new",templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let userID = req.cookies["user_id"];
+  let cookieid = req.cookies["user_id"]
+  let email = userLookup(cookieid,users)
   let shortURL = req.params.shortURL;
   const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL],email};
   res.render("urls_show", templateVars);
@@ -54,11 +47,11 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let userID = req.cookies["user_id"];
+  let cookieid = req.cookies["user_id"]
+  let email = userLookup(cookieid,users)
   const templateVars = { urls: urlDatabase, email};
   res.render("urls_index", templateVars);
 });
-
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -88,19 +81,14 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  let email = req.cookies[email];
+  // let email = req.cookies[email];
   res.redirect('/urls');
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect('/urls');
 });
-
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
 
 app.get("/hello", (req, res) => {
   const templateVars = { greeting: 'Hello World!' };
@@ -108,15 +96,47 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = { urls: urlDatabase};
+  let cookieid = req.cookies["user_id"]
+  let email = userLookup(cookieid,users)
+  const templateVars = { urls: urlDatabase,email};
   res.render("urls_register", templateVars);
 });
 
 app.post("/register", (req, res) => {
-  userID = generateRandomString()
-  users[userID] = {"id": userID, "email": req.body.email, "password":req.body.password};
-  res.cookie("user_id", users[userID].id);
+  randomUserID = generateRandomString()
+  users[randomUserID] = {"id": randomUserID, "email": req.body.email, "password":req.body.password};
+  res.cookie("user_id", users[randomUserID].id);
   // console.log(req.cookies["user_id"])
-  setTimeout(()=>console.log(users), 1000)
+  // setTimeout(()=>console.log(users), 1000)
   res.redirect('/urls');
 });
+
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+const userLookup = function(userid,data) {
+  let email = ""
+  for (let ids in users) {
+    if (userid === data[ids].id) {
+      return email = data[ids].email
+    } 
+  } return email
+} 
+// console.log(userLookup("userRandomID",users));
+
+
+const generateRandomString = function() {
+  let shortURL = '';
+  let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i = 0; shortURL.length < 6; i++) {
+    let tmpStr = possible.charAt(Math.floor(Math.random() * 54));
+    shortURL += tmpStr;
+  }
+  return shortURL;
+};
