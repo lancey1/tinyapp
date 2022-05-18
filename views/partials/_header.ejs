@@ -8,23 +8,21 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-
-
-        </form>
       </div>
 <div>
   <% if(username){ %>
   <span style="position:relative; width: 2000px; left:1000px">Logged in As: <%= username %>!</span>
+  <form style = "position:relative; left:1100px;" method="POST" action="/logout" >  <button>  Logout  </button> </form>
   <% } else { %>
-    <input name="username" type="text" placeholder="Username"/>
     <form style = "position:relative; left:1100px;" method="POST" action="/login">
+    <input name= "username" type="text" placeholder="Username"/>
     <button>  Login  </button>
+    </form>
   <% } %>
 </div>
-
-    </div>
   </nav>
   
 </header>
+
 
 
