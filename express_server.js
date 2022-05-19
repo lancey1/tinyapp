@@ -11,6 +11,8 @@ app.use(cookieSession({
   keys: ["secret key"]
 }));
 
+const {emailLookupbyID, generateRandomString, verifyEmail, passwordLookup, idLookupByEmail, urlsForUser} = require('./helperFunctions');
+
 const urlDatabase = {
   b6UTxQ: {
     longURL:"https://www.tsn.ca",
@@ -27,7 +29,7 @@ const users = {
     id: "userRandomID",
     email: "user@example.com",
     password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
-  },
+  },passwordLookup
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
@@ -42,19 +44,20 @@ const users = {
 
 app.get("/urls/new", (req, res) => {
   let cookieID = req.session.user_ID;
-  const templateVars = {email:emailLookupbyID(cookieID)};
+  const templateVars = {email:emailLookupbyID(cookieID,users)};
   if (!cookieID) {
     return res.redirect('/login');
-  } 
-  else {
-    return res.render("urls_new",templateVars)};
+  } else {
+    return res.render("urls_new",templateVars);
+  }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   let cookieID = req.session.user_ID;
+  let email = emailLookupbyID(cookieID, users);
   let shortURL = req.params.shortURL;
   let longURL = urlDatabase[shortURL]["longURL"];
-  const templateVars = { shortURL, longURL, email:emailLookupbyID(cookieID)};
+  const templateVars = {shortURL, longURL, email};
   res.render("urls_show", templateVars);
 });
 
@@ -64,8 +67,8 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/urls", (req, res) => {
   let cookieID = req.session.user_ID;
-  let email = emailLookupbyID(cookieID);
-  const templateVars = { urls: urlsForUser(cookieID), email};
+  let email = emailLookupbyID(cookieID, users);
+  const templateVars = { urls: urlsForUser(cookieID, urlDatabase), email};
   res.render("urls_index",templateVars);
 });
 
@@ -80,8 +83,7 @@ app.post("/urls", (req, res) => {
   if (cookieID) {
     urlDatabase[shortURL] = {"longURL":req.body.longURL, "userID":cookieID};
     return res.redirect(`/urls/${shortURL}`);
-  } 
-  else {
+  } else {
     return res.send("You must be logged in to access this function");
   }
 });
@@ -92,8 +94,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   if (cookieID === urlDatabase[shortURL].userID) {
     delete urlDatabase[shortURL];
     return res.redirect(`/urls`);
-  } 
-  else {
+  } else {
     return res.send("URL does not belong to you! \nYou must be the owner to delete this URL. \n");
   }
 });
@@ -105,21 +106,19 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 
 app.get("/login", (req, res) => {
   let cookieID = req.session.user_ID;
-  let email = emailLookupbyID(cookieID);
+  let email = emailLookupbyID(cookieID, users);
   const templateVars = { urls: urlDatabase,email};
   res.render("urls_login", templateVars);
 });
 
 app.post("/login", (req, res) => {
-  let email =  req.body.email;
-  let password = req.body.password;
-  let id = idLookupByEmail(email);
-  if (userLookupbyEmail(email) && passwordLookup(email,password)) {
+  let {email, password} = req.body;
+  let id = idLookupByEmail(email, users);
+  if (passwordLookup(email,password,users)) {
     req.session.user_ID = users[id].id;
     return res.redirect('/urls');
-  }
-  if (userLookupbyEmail(email) || passwordLookup(email,password)) {
-    return res.sendStatus(403).send(403);
+  } else {
+    return res.send("Please enter valid email and password");
   }
 });
 
@@ -135,7 +134,7 @@ app.get("/hello", (req, res) => {
 
 app.get("/register", (req, res) => {
   let cookieID = req.session.user_ID;
-  let email = emailLookupbyID(cookieID);
+  let email = emailLookupbyID(cookieID, users);
   const templateVars = { urls: urlDatabase,email};
   res.render("urls_register", templateVars);
 });
@@ -144,7 +143,7 @@ app.post("/register", (req, res) => {
   let randomUserID = generateRandomString();
   let emailInput =  req.body.email;
   let passwordInput = bcrypt.hashSync(req.body.password, 10);
-  if (emailInput === "" || passwordInput === "" || userLookupbyEmail(emailInput)) {
+  if (emailInput === "" || passwordInput === "" || verifyEmail(emailInput, users)) {
     return res.send("Please enter valid details");
   } else {
     users[randomUserID] = {"id": randomUserID, "email": emailInput, "password":passwordInput};
@@ -153,64 +152,6 @@ app.post("/register", (req, res) => {
   }
 });
 
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////START OF FUNCTIONS //////////////////////////////////////////////////////////////////
-
-const emailLookupbyID = function(userid) {
-  let email = "";
-  for (let ids in users) {
-    if (userid === users[ids].id) {
-      return email = users[ids].email;
-    }
-  } return undefined;
-};
-const generateRandomString = function() {
-  let shortURL = '';
-  let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; shortURL.length < 6; i++) {
-    let tmpStr = possible.charAt(Math.floor(Math.random() * 54));
-    shortURL += tmpStr;
-  }
-  return shortURL;
-};
-
-const userLookupbyEmail = function(email) {
-  for (let elm in users) {
-    if (email === users[elm].email) {
-      return email;
-    }
-  } return false;
-};
-
-const passwordLookup = function(email,password) {
-  let id = idLookupByEmail(email);
-  if (userLookupbyEmail(email)) {
-    if (bcrypt.compareSync(password, users[id].password)) {
-      return true;
-    } return false;
-  }
-};
-
-const idLookupByEmail = function(email) {
-  for (let ids in users) {
-    if (email === users[ids].email) {
-      return users[ids].id;
-    }
-  } return undefined;
-};
-
-const urlsForUser = function(id) {
-  let urlToDisplay = {};
-  for (let url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      urlToDisplay[url] = urlDatabase[url].longURL;
-    }
-  } return  urlToDisplay;
-};
-//////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////END OF FUNCTIONS //////////////////////////////////////////////////////////////////
