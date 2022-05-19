@@ -3,20 +3,19 @@ const app = express();
 const PORT = 8070; // default port 8080
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
-
+const bcrypt = require('bcryptjs');
 app.use(cookieParser());
 app.use(express.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
-
 const urlDatabase = {
   b6UTxQ: {
-        longURL: "https://www.tsn.ca",
-        userID: "aJ48lW"
+        longURL:"https://www.tsn.ca",
+        userID: "123456"
     },
     i3BoGr: {
         longURL: "https://www.google.ca",
-        userID: "aJ48lW"
+        userID: "123456"
     }
 };
 
@@ -24,19 +23,20 @@ const users = {
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
  "user2RandomID": {
     id: "user2RandomID", 
     email: "user2@example.com", 
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", 10)
   },
   "123456": {
     id: "123456", 
     email: "aa@gmail.com", 
-    password: "12"
+    password: bcrypt.hashSync("12", 10)
   }
 }
+console.log(users)
 
 app.get("/urls/new", (req, res) => {
   let cookieID = req.cookies["user_id"]
@@ -52,7 +52,8 @@ app.get("/urls/:shortURL", (req, res) => {
   let cookieID = req.cookies["user_id"]
   let email = emailLookupbyID(cookieID)
   let shortURL = req.params.shortURL;
-  const templateVars = { shortURL: shortURL, longURL:urlDatabase[shortURL]["longURL"],email};
+  let longURL = urlDatabase[shortURL]["longURL"];
+  const templateVars = { shortURL, longURL, email};
   res.render("urls_show", templateVars);
 });
 
@@ -63,7 +64,7 @@ app.get("/urls.json", (req, res) => {
 app.get("/urls", (req, res) => {
   let cookieID = req.cookies["user_id"]
   let email = emailLookupbyID(cookieID)
-  const templateVars = { urls: urlDatabase, email};
+  const templateVars = { urls: urlsForUser(cookieID), email};
   res.render("urls_index",templateVars)
 });
 
@@ -73,8 +74,7 @@ app.get("/", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  let longURL = urlDatabase[shortURL]["longURL"]
-  res.redirect(longURL);
+  res.redirect(urlDatabase[shortURL]["longURL"]);
 });
 
 app.post("/urls", (req, res) => {
@@ -89,15 +89,21 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect(`/urls`);
+  let shortURL = req.params.shortURL
+  cookieID = req.cookies["user_id"]
+  if (cookieID === urlDatabase[shortURL].userID) {
+    delete urlDatabase[shortURL];
+    res.redirect(`/urls`);
+  } else { 
+    res.send("URL does not belong to you. /n You must be the owner to delete this function")
+  }
 });
 
-app.post("/urls/:shortURL/edit", (req, res) => { ////////// something wrong here
-  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+app.post("/urls/:shortURL/edit", (req, res) => { 
+  let shortURL = req.params.shortURL;
+  urlDatabase[shortURL]["longURL"] = req.body.longURL;
   res.redirect('/urls');
 });
-
 
 app.get("/login", (req, res) => {
   let cookieID = req.cookies["user_id"]
@@ -108,7 +114,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   let email =  req.body.email
-  let password = req.body.password
+  let password = req.body.password 
   let id = idLookupByEmail(email)
   if (userLookupbyEmail(email) && passwordLookup(email,password)){
     res.cookie("user_id", users[id].id);
@@ -139,9 +145,9 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   let randomUserID = generateRandomString()
   let emailInput =  req.body.email
-  let passwordInput = req.body.password
+  let passwordInput = bcrypt.hashSync(req.body.password, 10);
   if (emailInput === "" || passwordInput === "" || userLookupbyEmail(emailInput)) {
-    res.sendStatus(404).send(400);
+    res.send("Please enter valid details");
   } 
   else {
     users[randomUserID] = {"id": randomUserID, "email": emailInput, "password":passwordInput};
@@ -187,11 +193,13 @@ const userLookupbyEmail = function (email){
 const passwordLookup = function(email,password){
   let id = idLookupByEmail(email)
   if (userLookupbyEmail(email)) {
-    if (users[id].password === password) {
+    if (bcrypt.compareSync(password, users[id].password)) {
       return true
     } return false
   } 
 }
+
+
 
 const idLookupByEmail = function(email) {
   for (let ids in users) {
@@ -201,5 +209,16 @@ const idLookupByEmail = function(email) {
   } return undefined
 } 
 
+const urlsForUser = function(id) {
+  urlToDisplay = {}
+  for (url in urlDatabase){
+    if (urlDatabase[url].userID === id){ 
+      urlToDisplay[url] = urlDatabase[url].longURL
+    }
+  } return  urlToDisplay
+} 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////END OF FUNCTIONS //////////////////////////////////////////////////////////////////
+
+
+//curl -X POST -i localhost:8070/urls/b6UTxQ/delete

@@ -51,4 +51,63 @@ const passwordLookup = function(email,password){
 // console.log(users)
 // console.log(idLookupByEmail("user2@example.com"))
 // console.log(userLookupbyEmail("user2@example.com"))
-console.log(passwordLookup("user2@example.com","dishwashaer-funk"))
+// console.log(passwordLookup("user2@example.com","dishwashaer-funk"))
+
+
+const urlDatabase = {
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW"
+  },
+  i3BoBr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW"
+   },
+  i3BoCr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ4W"
+  }, 
+  i3BoLr: {
+    longURL: "https://www.google.ca",
+    userID: "aJW"
+  },    
+  i3BoDr: {
+    longURL: "https://www.google.ca",
+    userID: "J48lW"
+  }
+};
+
+const urlsForUser = function(id) {
+  urlToDisplay = {}
+  for (url in urlDatabase){
+    if (urlDatabase[url].userID === id){ 
+      urlToDisplay[url] = urlDatabase[url].longURL
+    }
+  } return  urlToDisplay
+}
+
+
+const authenticateUser = function(id,url) {
+  if (urlDatabase[url].userID === id){ 
+    return true
+  } else { 
+      return false;
+  }
+}
+
+
+
+console.log(authenticateUser("aJW","i3BoLr"))
+
+
+
+
+// const authenticateUser = function(id) {
+//   if (urlDatabase["i3BoBr"].userID === id){ 
+//     return true
+//   } else {
+//     return  false
+//   }
+// }
+// console.log(authenticateUser("aJ48lW"))
+
