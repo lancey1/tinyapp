@@ -10,8 +10,14 @@ app.set("view engine", "ejs");
 
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+        longURL: "https://www.tsn.ca",
+        userID: "aJ48lW"
+    },
+    i3BoGr: {
+        longURL: "https://www.google.ca",
+        userID: "aJ48lW"
+    }
 };
 
 const users = { 
@@ -46,7 +52,7 @@ app.get("/urls/:shortURL", (req, res) => {
   let cookieID = req.cookies["user_id"]
   let email = emailLookupbyID(cookieID)
   let shortURL = req.params.shortURL;
-  const templateVars = { shortURL: shortURL, longURL:urlDatabase[shortURL],email};
+  const templateVars = { shortURL: shortURL, longURL:urlDatabase[shortURL]["longURL"],email};
   res.render("urls_show", templateVars);
 });
 
@@ -67,7 +73,7 @@ app.get("/", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  let longURL = urlDatabase[shortURL];
+  let longURL = urlDatabase[shortURL]["longURL"]
   res.redirect(longURL);
 });
 
@@ -75,7 +81,7 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   let cookieID = req.cookies["user_id"]
   if (cookieID) {
-  urlDatabase[shortURL] = "http://"+req.body.longURL;
+  urlDatabase[shortURL] = {"longURL":req.body.longURL, "userID":cookieID}
   res.redirect(`/urls/${shortURL}`);}
   else{
     res.send("You must be logged in to access this function")
@@ -151,9 +157,8 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////START OF FUNCTIONS //////////////////////////////////////////////////////////////////
 
 const emailLookupbyID = function(userid) {
   let email = ""
@@ -163,9 +168,6 @@ const emailLookupbyID = function(userid) {
     } 
   } return undefined
 } 
-// console.log(emailLookupbyID("userRandomID",users));
-
-
 const generateRandomString = function() {
   let shortURL = '';
   let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -200,3 +202,6 @@ const idLookupByEmail = function(email) {
     } 
   } return undefined
 } 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////END OF FUNCTIONS //////////////////////////////////////////////////////////////////
