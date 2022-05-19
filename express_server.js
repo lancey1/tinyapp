@@ -1,59 +1,60 @@
 const express = require("express");
 const app = express();
 const PORT = 8070; // default port 8080
-const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
-app.use(cookieParser());
+
 app.use(express.urlencoded({extended: true}));
 app.set("view engine", "ejs");
+app.use(cookieSession({
+  name: 'session',
+  keys: ["secret key"]
+}));
 
 const urlDatabase = {
   b6UTxQ: {
-        longURL:"https://www.tsn.ca",
-        userID: "123456"
-    },
-    i3BoGr: {
-        longURL: "https://www.google.ca",
-        userID: "123456"
-    }
+    longURL:"https://www.tsn.ca",
+    userID: "123456"
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "123456"
+  }
 };
 
-const users = { 
+const users = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: bcrypt.hashSync("dishwasher-funk", 10)
   },
   "123456": {
-    id: "123456", 
-    email: "aa@gmail.com", 
+    id: "123456",
+    email: "aa@gmail.com",
     password: bcrypt.hashSync("12", 10)
   }
-}
-console.log(users)
+};
 
 app.get("/urls/new", (req, res) => {
-  let cookieID = req.cookies["user_id"]
-  let email = emailLookupbyID(cookieID)
-  const templateVars = {email};
-  if(!cookieID){  
-    res.redirect('/login');
-  }
-  res.render("urls_new",templateVars);
+  let cookieID = req.session.user_ID;
+  const templateVars = {email:emailLookupbyID(cookieID)};
+  if (!cookieID) {
+    return res.redirect('/login');
+  } 
+  else {
+    return res.render("urls_new",templateVars)};
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let cookieID = req.cookies["user_id"]
-  let email = emailLookupbyID(cookieID)
+  let cookieID = req.session.user_ID;
   let shortURL = req.params.shortURL;
   let longURL = urlDatabase[shortURL]["longURL"];
-  const templateVars = { shortURL, longURL, email};
+  const templateVars = { shortURL, longURL, email:emailLookupbyID(cookieID)};
   res.render("urls_show", templateVars);
 });
 
@@ -62,14 +63,10 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let cookieID = req.cookies["user_id"]
-  let email = emailLookupbyID(cookieID)
+  let cookieID = req.session.user_ID;
+  let email = emailLookupbyID(cookieID);
   const templateVars = { urls: urlsForUser(cookieID), email};
-  res.render("urls_index",templateVars)
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.render("urls_index",templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -79,54 +76,55 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
-  let cookieID = req.cookies["user_id"]
+  let cookieID = req.session.user_ID;
   if (cookieID) {
-  urlDatabase[shortURL] = {"longURL":req.body.longURL, "userID":cookieID}
-  res.redirect(`/urls/${shortURL}`);}
-  else{
-    res.send("You must be logged in to access this function")
+    urlDatabase[shortURL] = {"longURL":req.body.longURL, "userID":cookieID};
+    return res.redirect(`/urls/${shortURL}`);
+  } 
+  else {
+    return res.send("You must be logged in to access this function");
   }
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let shortURL = req.params.shortURL
-  cookieID = req.cookies["user_id"]
+  let shortURL = req.params.shortURL;
+  let cookieID = req.session.user_ID;
   if (cookieID === urlDatabase[shortURL].userID) {
     delete urlDatabase[shortURL];
-    res.redirect(`/urls`);
-  } else { 
-    res.send("URL does not belong to you. /n You must be the owner to delete this function")
+    return res.redirect(`/urls`);
+  } 
+  else {
+    return res.send("URL does not belong to you! \nYou must be the owner to delete this URL. \n");
   }
 });
-
-app.post("/urls/:shortURL/edit", (req, res) => { 
+app.post("/urls/:shortURL/edit", (req, res) => {
   let shortURL = req.params.shortURL;
   urlDatabase[shortURL]["longURL"] = req.body.longURL;
   res.redirect('/urls');
 });
 
 app.get("/login", (req, res) => {
-  let cookieID = req.cookies["user_id"]
-  let email = emailLookupbyID(cookieID)
+  let cookieID = req.session.user_ID;
+  let email = emailLookupbyID(cookieID);
   const templateVars = { urls: urlDatabase,email};
   res.render("urls_login", templateVars);
 });
 
 app.post("/login", (req, res) => {
-  let email =  req.body.email
-  let password = req.body.password 
-  let id = idLookupByEmail(email)
-  if (userLookupbyEmail(email) && passwordLookup(email,password)){
-    res.cookie("user_id", users[id].id);
-    res.redirect('/urls')
+  let email =  req.body.email;
+  let password = req.body.password;
+  let id = idLookupByEmail(email);
+  if (userLookupbyEmail(email) && passwordLookup(email,password)) {
+    req.session.user_ID = users[id].id;
+    return res.redirect('/urls');
   }
   if (userLookupbyEmail(email) || passwordLookup(email,password)) {
-    res.sendStatus(403).send(403);
-  } 
+    return res.sendStatus(403).send(403);
+  }
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null;
   res.redirect('/urls');
 });
 
@@ -136,23 +134,22 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  let cookieID = req.cookies["user_id"]
-  let email = emailLookupbyID(cookieID)
+  let cookieID = req.session.user_ID;
+  let email = emailLookupbyID(cookieID);
   const templateVars = { urls: urlDatabase,email};
   res.render("urls_register", templateVars);
 });
 
 app.post("/register", (req, res) => {
-  let randomUserID = generateRandomString()
-  let emailInput =  req.body.email
+  let randomUserID = generateRandomString();
+  let emailInput =  req.body.email;
   let passwordInput = bcrypt.hashSync(req.body.password, 10);
   if (emailInput === "" || passwordInput === "" || userLookupbyEmail(emailInput)) {
-    res.send("Please enter valid details");
-  } 
-  else {
+    return res.send("Please enter valid details");
+  } else {
     users[randomUserID] = {"id": randomUserID, "email": emailInput, "password":passwordInput};
-    res.cookie("user_id", users[randomUserID].id);
-    res.redirect('/urls');
+    req.session.user_ID = users[randomUserID].id;
+    return res.redirect('/urls');
   }
 });
 
@@ -165,13 +162,13 @@ app.listen(PORT, () => {
 ////////////////////////////START OF FUNCTIONS //////////////////////////////////////////////////////////////////
 
 const emailLookupbyID = function(userid) {
-  let email = ""
+  let email = "";
   for (let ids in users) {
     if (userid === users[ids].id) {
-      return email = users[ids].email
-    } 
-  } return undefined
-} 
+      return email = users[ids].email;
+    }
+  } return undefined;
+};
 const generateRandomString = function() {
   let shortURL = '';
   let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -182,43 +179,38 @@ const generateRandomString = function() {
   return shortURL;
 };
 
-const userLookupbyEmail = function (email){
+const userLookupbyEmail = function(email) {
   for (let elm in users) {
     if (email === users[elm].email) {
-      return email
-    } 
-  } return false
-} 
+      return email;
+    }
+  } return false;
+};
 
-const passwordLookup = function(email,password){
-  let id = idLookupByEmail(email)
+const passwordLookup = function(email,password) {
+  let id = idLookupByEmail(email);
   if (userLookupbyEmail(email)) {
     if (bcrypt.compareSync(password, users[id].password)) {
-      return true
-    } return false
-  } 
-}
-
-
+      return true;
+    } return false;
+  }
+};
 
 const idLookupByEmail = function(email) {
   for (let ids in users) {
     if (email === users[ids].email) {
-      return users[ids].id
-    } 
-  } return undefined
-} 
+      return users[ids].id;
+    }
+  } return undefined;
+};
 
 const urlsForUser = function(id) {
-  urlToDisplay = {}
-  for (url in urlDatabase){
-    if (urlDatabase[url].userID === id){ 
-      urlToDisplay[url] = urlDatabase[url].longURL
+  let urlToDisplay = {};
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      urlToDisplay[url] = urlDatabase[url].longURL;
     }
-  } return  urlToDisplay
-} 
+  } return  urlToDisplay;
+};
 //////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////END OF FUNCTIONS //////////////////////////////////////////////////////////////////
-
-
-//curl -X POST -i localhost:8070/urls/b6UTxQ/delete
