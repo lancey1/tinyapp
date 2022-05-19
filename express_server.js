@@ -75,7 +75,7 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   let cookieID = req.cookies["user_id"]
   if (cookieID) {
-  urlDatabase[shortURL] = {"userID": cookieID, "longURL" : req.body.longURL} //
+  urlDatabase[shortURL] = "http://"+req.body.longURL;
   res.redirect(`/urls/${shortURL}`);}
   else{
     res.send("You must be logged in to access this function")
