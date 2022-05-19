@@ -93,8 +93,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect(`/urls`);
 });
 
-app.post("/urls/:shortURL/edit", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.longURL;
+app.post("/urls/:shortURL/edit", (req, res) => { ////////// something wrong here
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect('/urls');
 });
 
@@ -118,8 +118,6 @@ app.post("/login", (req, res) => {
     res.sendStatus(403).send(403);
   } 
 });
-
-
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
