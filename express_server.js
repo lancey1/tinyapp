@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const PORT = 8050; // default port 8080
+const PORT = 8070; // default port 8080
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
@@ -24,19 +24,24 @@ const users = {
     id: "user2RandomID", 
     email: "user2@example.com", 
     password: "dishwasher-funk"
+  },
+  "123456": {
+    id: "123456", 
+    email: "aa@gmail.com", 
+    password: "12"
   }
 }
 
 app.get("/urls/new", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookupbyID(cookieid,users)
+  let email = emailLookupbyID(cookieid)
   const templateVars = {email};
   res.render("urls_new",templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookupbyID(cookieid,users)
+  let email = emailLookupbyID(cookieid)
   let shortURL = req.params.shortURL;
   const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL],email};
   res.render("urls_show", templateVars);
@@ -48,7 +53,7 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/urls", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookupbyID(cookieid,users)
+  let email = emailLookupbyID(cookieid)
   const templateVars = { urls: urlDatabase, email};
   res.render("urls_index", templateVars);
 });
@@ -80,10 +85,28 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   res.redirect('/urls');
 });
 
-app.post("/login", (req, res) => {
-  // let email = req.cookies[email];
-  res.redirect('/urls');
+
+app.get("/login", (req, res) => {
+  let cookieid = req.cookies["user_id"]
+  let email = emailLookupbyID(cookieid)
+  const templateVars = { urls: urlDatabase,email};
+  res.render("urls_login", templateVars);
 });
+
+app.post("/login", (req, res) => {
+  let email =  req.body.email
+  let password = req.body.password
+  let id = idLookupByEmail(email)
+  if (userLookupbyEmail(email) && passwordLookup(email,password)){
+    res.cookie("user_id", users[id].id);
+    res.redirect('/urls')
+  }
+  if (userLookupbyEmail(email) || passwordLookup(email,password)) {
+    res.sendStatus(403).send(403);
+  } 
+});
+
+
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
@@ -97,7 +120,7 @@ app.get("/hello", (req, res) => {
 
 app.get("/register", (req, res) => {
   let cookieid = req.cookies["user_id"]
-  let email = userLookupbyID(cookieid,users)
+  let email = emailLookupbyID(cookieid)
   const templateVars = { urls: urlDatabase,email};
   res.render("urls_register", templateVars);
 });
@@ -106,7 +129,7 @@ app.post("/register", (req, res) => {
   let randomUserID = generateRandomString()
   let emailInput =  req.body.email
   let passwordInput = req.body.password
-  if (emailInput === "" || passwordInput === "" || userLookupbyEmail(emailInput,users)) {
+  if (emailInput === "" || passwordInput === "" || userLookupbyEmail(emailInput)) {
     res.sendStatus(404).send(400);
   } 
   else {
@@ -127,15 +150,15 @@ app.listen(PORT, () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-const userLookupbyID = function(userid,data) {
+const emailLookupbyID = function(userid) {
   let email = ""
-  for (let ids in data) {
-    if (userid === data[ids].id) {
-      return email = data[ids].email
+  for (let ids in users) {
+    if (userid === users[ids].id) {
+      return email = users[ids].email
     } 
-  } return email
+  } return undefined
 } 
-// console.log(userLookupbyID("userRandomID",users));
+// console.log(emailLookupbyID("userRandomID",users));
 
 
 const generateRandomString = function() {
@@ -148,11 +171,27 @@ const generateRandomString = function() {
   return shortURL;
 };
 
-
-const userLookupbyEmail = function (email,data){
-  for (let elm in data) {
-    if (email === data[elm].email) {
-      return true
+const userLookupbyEmail = function (email){
+  for (let elm in users) {
+    if (email === users[elm].email) {
+      return email
     } 
   } return false
+} 
+
+const passwordLookup = function(email,password){
+  let id = idLookupByEmail(email)
+  if (userLookupbyEmail(email)) {
+    if (users[id].password === password) {
+      return true
+    } return false
+  } 
+}
+
+const idLookupByEmail = function(email) {
+  for (let ids in users) {
+    if (email === users[ids].email) {
+      return users[ids].id
+    } 
+  } return undefined
 } 
