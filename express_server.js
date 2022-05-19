@@ -29,7 +29,7 @@ const users = {
     id: "userRandomID",
     email: "user@example.com",
     password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
-  },passwordLookup
+  },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
@@ -77,6 +77,28 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(urlDatabase[shortURL]["longURL"]);
 });
 
+app.get("/login", (req, res) => {
+  let cookieID = req.session.user_ID;
+  let email = emailLookupbyID(cookieID, users);
+  const templateVars = { urls: urlDatabase,email};
+  res.render("urls_login", templateVars);
+});
+
+app.get("/register", (req, res) => {
+  let cookieID = req.session.user_ID;
+  let email = emailLookupbyID(cookieID, users);
+  if (cookieID) {
+    return res.redirect('/urls');
+  }
+  const templateVars = { urls: urlDatabase,email};
+  res.render("urls_register", templateVars);
+});
+
+app.get("/hello", (req, res) => {
+  const templateVars = { greeting: 'Hello World!' };
+  res.render("hello_world", templateVars);
+});
+
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   let cookieID = req.session.user_ID;
@@ -98,17 +120,16 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     return res.send("URL does not belong to you! \nYou must be the owner to delete this URL. \n");
   }
 });
+
 app.post("/urls/:shortURL/edit", (req, res) => {
   let shortURL = req.params.shortURL;
-  urlDatabase[shortURL]["longURL"] = req.body.longURL;
-  res.redirect('/urls');
-});
-
-app.get("/login", (req, res) => {
   let cookieID = req.session.user_ID;
-  let email = emailLookupbyID(cookieID, users);
-  const templateVars = { urls: urlDatabase,email};
-  res.render("urls_login", templateVars);
+  if (cookieID === urlDatabase[shortURL].userID){
+    urlDatabase[shortURL]["longURL"] = req.body.longURL;
+    res.redirect('/urls')
+  }else {
+    return res.send("URL does not belong to you! \nYou must be the owner to edit this URL. \n");
+  };
 });
 
 app.post("/login", (req, res) => {
@@ -127,24 +148,15 @@ app.post("/logout", (req, res) => {
   res.redirect('/urls');
 });
 
-app.get("/hello", (req, res) => {
-  const templateVars = { greeting: 'Hello World!' };
-  res.render("hello_world", templateVars);
-});
-
-app.get("/register", (req, res) => {
-  let cookieID = req.session.user_ID;
-  let email = emailLookupbyID(cookieID, users);
-  const templateVars = { urls: urlDatabase,email};
-  res.render("urls_register", templateVars);
-});
-
 app.post("/register", (req, res) => {
   let randomUserID = generateRandomString();
   let emailInput =  req.body.email;
   let passwordInput = bcrypt.hashSync(req.body.password, 10);
-  if (emailInput === "" || passwordInput === "" || verifyEmail(emailInput, users)) {
-    return res.send("Please enter valid details");
+  if (emailInput === "" || passwordInput === "") {
+    return res.send("Please enter valid account details");
+  }
+  if (verifyEmail(emailInput, users)) {
+    return res.send("Email account already registered! Try again with a different email")
   } else {
     users[randomUserID] = {"id": randomUserID, "email": emailInput, "password":passwordInput};
     req.session.user_ID = users[randomUserID].id;
