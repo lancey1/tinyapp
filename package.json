@@ -19,7 +19,6 @@
   },
   "homepage": "https://github.com/lancey1/tinyapp#readme",
   "dependencies": {
-    "body-parser": "^1.20.0",
     "cookie-parser": "^1.4.6",
     "cookie-session": "^2.0.0",
     "ejs": "^3.1.8",

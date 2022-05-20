@@ -1,8 +1,8 @@
 const express = require("express");
-const app = express();
-const PORT = 8070; // default port 8080
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
+const app = express();
+const PORT = 8070;
 
 app.use(express.urlencoded({extended: true}));
 app.set("view engine", "ejs");
@@ -42,6 +42,18 @@ const users = {
   }
 };
 
+//Routes
+
+//redirects to URL page if logged in, if not logged in redirects to /login page
+app.get("/", (req, res) => {
+  let cookieID = req.session.user_ID;
+  if (cookieID) {
+    return res.redirect("/urls");
+  } else {
+    return res.redirect("/login");
+  }
+});
+
 app.get("/urls/new", (req, res) => {
   let cookieID = req.session.user_ID;
   const templateVars = {email:emailLookupbyID(cookieID,users)};
@@ -72,6 +84,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index",templateVars);
 });
 
+// Page to create a short URL
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
   res.redirect(urlDatabase[shortURL]["longURL"]);
@@ -98,7 +111,7 @@ app.get("/hello", (req, res) => {
   const templateVars = { greeting: 'Hello World!' };
   res.render("hello_world", templateVars);
 });
-
+// allows registered users to create a short URL given a website, if not registered then redirects to an error page
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   let cookieID = req.session.user_ID;
@@ -109,7 +122,7 @@ app.post("/urls", (req, res) => {
     return res.send("You must be logged in to access this function");
   }
 });
-
+// allows owner to delete the URL entry, if not the owner redirects to an error page
 app.post("/urls/:shortURL/delete", (req, res) => {
   let shortURL = req.params.shortURL;
   let cookieID = req.session.user_ID;
@@ -120,18 +133,18 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     return res.send("URL does not belong to you! \nYou must be the owner to delete this URL. \n");
   }
 });
-
+// allows owner to edit the long URL, if not the owner redirects to an error page
 app.post("/urls/:shortURL/edit", (req, res) => {
   let shortURL = req.params.shortURL;
   let cookieID = req.session.user_ID;
-  if (cookieID === urlDatabase[shortURL].userID){
+  if (cookieID === urlDatabase[shortURL].userID) {
     urlDatabase[shortURL]["longURL"] = req.body.longURL;
-    res.redirect('/urls')
-  }else {
+    res.redirect('/urls');
+  } else {
     return res.send("URL does not belong to you! \nYou must be the owner to edit this URL. \n");
-  };
+  }
 });
-
+// logs user in if account details are corresponds to user database, else redirects to an error page
 app.post("/login", (req, res) => {
   let {email, password} = req.body;
   let id = idLookupByEmail(email, users);
@@ -142,12 +155,12 @@ app.post("/login", (req, res) => {
     return res.send("Please enter valid email and password");
   }
 });
-
+// logs user out by deleting cookie
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect('/urls');
 });
-
+// registers users with provided email and password, password is then hashed, assigns a encrypted cookie and redirects to homepage
 app.post("/register", (req, res) => {
   let randomUserID = generateRandomString();
   let emailInput =  req.body.email;
@@ -156,7 +169,7 @@ app.post("/register", (req, res) => {
     return res.send("Please enter valid account details");
   }
   if (verifyEmail(emailInput, users)) {
-    return res.send("Email account already registered! Try again with a different email")
+    return res.send("Email account already registered! Try again with a different email");
   } else {
     users[randomUserID] = {"id": randomUserID, "email": emailInput, "password":passwordInput};
     req.session.user_ID = users[randomUserID].id;
