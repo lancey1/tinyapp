@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/lancey1/tinyapp#readme",
   "dependencies": {
-    "bcrypt": "^5.0.1",
+    "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cookie-session": "^2.0.0",
     "ejs": "^3.1.8",
@@ -28,6 +28,7 @@
   "devDependencies": {
     "chai": "^4.3.6",
     "eslint": "^8.15.0",
+    "eslint-plugin-react": "^7.30.0",
     "mocha": "^10.0.0",
     "nodemon": "^2.0.16"
   }

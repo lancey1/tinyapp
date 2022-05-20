@@ -14,14 +14,14 @@ app.use(cookieSession({
 const {emailLookupbyID, generateRandomString, verifyEmail, passwordLookup, idLookupByEmail, urlsForUser} = require('./helperFunctions');
 
 const urlDatabase = {
-  b6UTxQ: {
+  a5doGr: {
     longURL:"https://www.tsn.ca",
     userID: "123456"
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
     userID: "123456"
-  }
+  },
 };
 
 const users = {
@@ -70,7 +70,12 @@ app.get("/urls/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
   let longURL = urlDatabase[shortURL]["longURL"];
   const templateVars = {shortURL, longURL, email};
-  res.render("urls_show", templateVars);
+  if (cookieID === urlDatabase[shortURL].userID) {
+    urlDatabase[shortURL]["longURL"] = req.body.longURL;
+    return res.render("urls_show", templateVars);
+  } else {
+    return res.send("URL does not belong to you! \nYou must be the owner to access this page. \n");
+  }
 });
 
 app.get("/urls.json", (req, res) => {
@@ -87,7 +92,7 @@ app.get("/urls", (req, res) => {
 // Page to create a short URL
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  res.redirect(urlDatabase[shortURL]["longURL"]);
+  return res.redirect(urlDatabase[shortURL]["longURL"]);
 });
 
 app.get("/login", (req, res) => {
