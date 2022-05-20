@@ -23,7 +23,7 @@ TinyApp is a full stack web application built with Node and Express that allows 
 Instruction
 
 ## How to use TinyApp
-- Run node server
+- Run node server by `npm start`
 - Browse to http://localhost:8070/
 - Shorten all the URLs!
 
@@ -32,7 +32,7 @@ Instruction
 - Node.js
 - Express
 - EJS
-- bcrypt
+- bcryptjs
 - cookie-session
 - mocha (for testing)
 - chai (for testing)
