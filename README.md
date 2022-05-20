@@ -9,8 +9,10 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["screenshot description"](#)
-!["screenshot description"](#)
+!["Landing page of Tinyapp"](https://github.com/lancey1/tinyapp/blob/master/docs/default.png)
+!["Log in page of Tinyapp"](https://github.com/lancey1/tinyapp/blob/master/docs/log%20in.png)
+!["After creation of Short URL"](https://github.com/lancey1/tinyapp/blob/master/docs/url%20creation.png)
+!["Personalized page for Tinyapp user](https://github.com/lancey1/tinyapp/blob/master/docs/url%20page.png)
 
 
 
