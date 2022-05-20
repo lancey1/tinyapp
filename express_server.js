@@ -92,8 +92,11 @@ app.get("/urls", (req, res) => {
 // Page to create a short URL
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  return res.redirect(urlDatabase[shortURL]["longURL"]);
-});
+  if (urlDatabase[shortURL]) {
+  return res.redirect(urlDatabase[shortURL]["longURL"])}
+})
+
+
 
 app.get("/login", (req, res) => {
   let cookieID = req.session.user_ID;
