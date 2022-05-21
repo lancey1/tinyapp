@@ -53,7 +53,7 @@ app.get("/", (req, res) => {
     return res.redirect("/login");
   }
 });
-
+//verifies that the user is logged in else it redirects to login page
 app.get("/urls/new", (req, res) => {
   let cookieID = req.session.user_ID;
   const templateVars = {email:emailLookupbyID(cookieID,users)};
@@ -64,6 +64,7 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
+// verifies that the user is the owner of the short URL else it redirects to an error page
 app.get("/urls/:shortURL", (req, res) => {
   let cookieID = req.session.user_ID;
   let email = emailLookupbyID(cookieID, users);
@@ -71,7 +72,6 @@ app.get("/urls/:shortURL", (req, res) => {
   let longURL = urlDatabase[shortURL]["longURL"];
   const templateVars = {shortURL, longURL, email};
   if (cookieID === urlDatabase[shortURL].userID) {
-    urlDatabase[shortURL]["longURL"] = req.body.longURL;
     return res.render("urls_show", templateVars);
   } else {
     return res.send("URL does not belong to you! \nYou must be the owner to access this page. \n");
@@ -82,6 +82,7 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// displays a login or create account message if user is not logged in, if user is logged in displays the users shortened URLs
 app.get("/urls", (req, res) => {
   let cookieID = req.session.user_ID;
   let email = emailLookupbyID(cookieID, users);
@@ -89,15 +90,14 @@ app.get("/urls", (req, res) => {
   res.render("urls_index",templateVars);
 });
 
-// Page to create a short URL
+// page to create a short URL some weird bug here
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  if (urlDatabase[shortURL]) {
-  return res.redirect(urlDatabase[shortURL]["longURL"])}
-})
+  const longURL = urlDatabase[shortURL]["longURL"]
+  return res.redirect(longURL)
+});
 
-
-
+// page to log in 
 app.get("/login", (req, res) => {
   let cookieID = req.session.user_ID;
   let email = emailLookupbyID(cookieID, users);
@@ -105,6 +105,7 @@ app.get("/login", (req, res) => {
   res.render("urls_login", templateVars);
 });
 
+// page to register an account
 app.get("/register", (req, res) => {
   let cookieID = req.session.user_ID;
   let email = emailLookupbyID(cookieID, users);
@@ -156,7 +157,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 app.post("/login", (req, res) => {
   let {email, password} = req.body;
   let id = idLookupByEmail(email, users);
-  if (passwordLookup(email,password,users)) {
+  if (passwordLookup(email,password,users)||idLookupByEmail(email, users)) {
     req.session.user_ID = users[id].id;
     return res.redirect('/urls');
   } else {
@@ -172,13 +173,14 @@ app.post("/logout", (req, res) => {
 app.post("/register", (req, res) => {
   let randomUserID = generateRandomString();
   let emailInput =  req.body.email;
-  let passwordInput = bcrypt.hashSync(req.body.password, 10);
+  let passwordInput = req.body.password;
   if (emailInput === "" || passwordInput === "") {
     return res.send("Please enter valid account details");
   }
   if (verifyEmail(emailInput, users)) {
     return res.send("Email account already registered! Try again with a different email");
   } else {
+    passwordInput = bcrypt.hashSync(req.body.password, 10);
     users[randomUserID] = {"id": randomUserID, "email": emailInput, "password":passwordInput};
     req.session.user_ID = users[randomUserID].id;
     return res.redirect('/urls');
